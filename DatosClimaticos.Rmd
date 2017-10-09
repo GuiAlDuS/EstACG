@@ -1,0 +1,84 @@
+---
+title: "Datos climáticos históricos de ACG"
+output: html_notebook
+---
+
+```{r}
+library("googlesheets")
+library("dplyr")
+library("lubridate")
+library("ggplot2")
+```
+A leer GoogleSheet con los datos del ACG y cargar datos de Estación Santa Rosa:
+```{r}
+SR <- gs_title("EstacionesACG")
+SantaRosa <- SR %>% gs_read(ws = "StaRosa")
+```
+Estructura de la tabla importada:
+```{r}
+str(SantaRosa)
+```
+
+
+Crear columna de fecha:
+```{r}
+SantaRosa$fecha <- ymd(paste(SantaRosa$anno,SantaRosa$mes,SantaRosa$dia, sep = '/'))
+```
+Notese que "Lluvia" se importó como tipo "character", hay que convertirla a "numeric":
+```{r}
+SantaRosa$Lluvia <- as.numeric(SantaRosa$Lluvia)
+```
+
+Tipos de datos:
+```{r}
+str(SantaRosa)
+```
+
+Transformar las temperaturas a centígrados:
+Primero hacer función de transformación
+
+```{r}
+FaC <- function(x, y) {
+  ifelse (x == 'F', (y - 32) * (5/9), y)
+}
+```
+
+Ahora hacer la transformación para temperatura máxima (Tmax) y mínima (Tmin):
+```{r}
+SantaRosa$TmaxC <- FaC(SantaRosa$Unid_T, SantaRosa$Tmax)
+SantaRosa$TminC <- FaC(SantaRosa$Unid_T, SantaRosa$Tmin)
+```
+
+Revisar rango de valores a través de un histograma.
+
+Lluvia:
+```{r}
+ggplot(SantaRosa) + geom_histogram(aes(x=Lluvia))
+```
+```{r}
+summary(SantaRosa$Lluvia)
+```
+
+Temperatura máxima:
+```{r}
+ggplot(SantaRosa) + geom_histogram(aes(x=TmaxC))
+```
+```{r}
+summary(SantaRosa$TmaxC)
+```
+
+
+Temperatura mínima:
+```{r}
+ggplot(SantaRosa) + geom_histogram(aes(x=TminC))
+```
+```{r}
+summary(SantaRosa$TminC)
+```
+
+Revisar fechas de:
+Día más lluvioso
+Temperaturas mayores a 100C (a estas no les pusieron el decimal).
+Para las temperaturas mayores a 100 entonces dividir entre 100
+
+Crear lista de días y meses sin datos.
